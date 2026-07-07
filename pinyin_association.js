@@ -1081,15 +1081,21 @@ function output(keyValue) {
     : splitPinyinPartial(_pinyinBuffer);
   var syllables = split.syllables;
 
-  // 消费前 N 个音节
-  var consumeCount = Math.min(charCount, syllables.length);
-  var consumedLength = 0;
-  for (var i = 0; i < consumeCount; i++) {
-    consumedLength += syllables[i].length;
+  // 消费前 N 个音节（无完整音节时整个缓冲消费，如单字母前缀匹配）
+  if (syllables.length === 0) {
+    _pinyinBuffer = '';
+  } else {
+    var consumeCount = Math.min(charCount, syllables.length);
+    var consumedLength = 0;
+    for (var i = 0; i < consumeCount; i++) {
+      consumedLength += syllables[i].length;
+    }
+    // 消费完所有完整音节后，连带清除剩余的不完整拼音前缀（如 "tianj" → 选"天"后清掉"j"）
+    if (consumeCount >= syllables.length && split.remaining) {
+      consumedLength += split.remaining.length;
+    }
+    _pinyinBuffer = _pinyinBuffer.substring(consumedLength);
   }
-
-  // 从缓冲中移除已消费部分
-  _pinyinBuffer = _pinyinBuffer.substring(consumedLength);
 
   if (_pinyinBuffer) {
     // 还有剩余拼音，更新候选
@@ -1158,6 +1164,7 @@ function output(keyValue) {
     _splitAlternatives = [];
     _splitIndex = 0;
     $('.fullKeyboard .key').html('');
+    $('.letterWrap li.letter').removeClass('VK_disabled');
     showContextSuggestions();
   }
 }
@@ -1910,15 +1917,21 @@ function output(keyValue) {
     : splitPinyinPartial(_pinyinBuffer);
   var syllables = split.syllables;
 
-  // 消费前 N 个音节
-  var consumeCount = Math.min(charCount, syllables.length);
-  var consumedLength = 0;
-  for (var i = 0; i < consumeCount; i++) {
-    consumedLength += syllables[i].length;
+  // 消费前 N 个音节（无完整音节时整个缓冲消费，如单字母前缀匹配）
+  if (syllables.length === 0) {
+    _pinyinBuffer = '';
+  } else {
+    var consumeCount = Math.min(charCount, syllables.length);
+    var consumedLength = 0;
+    for (var i = 0; i < consumeCount; i++) {
+      consumedLength += syllables[i].length;
+    }
+    // 消费完所有完整音节后，连带清除剩余的不完整拼音前缀（如 "tianj" → 选"天"后清掉"j"）
+    if (consumeCount >= syllables.length && split.remaining) {
+      consumedLength += split.remaining.length;
+    }
+    _pinyinBuffer = _pinyinBuffer.substring(consumedLength);
   }
-
-  // 从缓冲中移除已消费部分
-  _pinyinBuffer = _pinyinBuffer.substring(consumedLength);
 
   if (_pinyinBuffer) {
     // 还有剩余拼音，更新候选
@@ -1987,6 +2000,7 @@ function output(keyValue) {
     _splitIndex = 0;
     $('.fullKeyboard .key').html('');
     $('.pinyin-split-list').empty();
+    $('.letterWrap li.letter').removeClass('VK_disabled');
     showContextSuggestions();
     // 缓冲已空时自动收起面板
     if (keyboard.setting.panelExpanded) {
