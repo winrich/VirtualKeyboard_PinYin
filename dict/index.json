@@ -1,0 +1,140 @@
+{
+  "a": {
+    "keys": 2911,
+    "words": 3730,
+    "bytes": 96997,
+    "file": "a.json"
+  },
+  "b": {
+    "keys": 14186,
+    "words": 19186,
+    "bytes": 484218,
+    "file": "b.json"
+  },
+  "c": {
+    "keys": 11602,
+    "words": 15151,
+    "bytes": 402108,
+    "file": "c.json"
+  },
+  "d": {
+    "keys": 22464,
+    "words": 29940,
+    "bytes": 769059,
+    "file": "d.json"
+  },
+  "e": {
+    "keys": 1577,
+    "words": 1839,
+    "bytes": 50842,
+    "file": "e.json"
+  },
+  "f": {
+    "keys": 5433,
+    "words": 8860,
+    "bytes": 198048,
+    "file": "f.json"
+  },
+  "g": {
+    "keys": 11858,
+    "words": 16948,
+    "bytes": 423100,
+    "file": "g.json"
+  },
+  "h": {
+    "keys": 19466,
+    "words": 27739,
+    "bytes": 686022,
+    "file": "h.json"
+  },
+  "j": {
+    "keys": 11981,
+    "words": 18726,
+    "bytes": 436689,
+    "file": "j.json"
+  },
+  "k": {
+    "keys": 3627,
+    "words": 4406,
+    "bytes": 112892,
+    "file": "k.json"
+  },
+  "l": {
+    "keys": 20233,
+    "words": 30456,
+    "bytes": 714068,
+    "file": "l.json"
+  },
+  "m": {
+    "keys": 10051,
+    "words": 13841,
+    "bytes": 324929,
+    "file": "m.json"
+  },
+  "n": {
+    "keys": 8725,
+    "words": 11094,
+    "bytes": 287423,
+    "file": "n.json"
+  },
+  "o": {
+    "keys": 201,
+    "words": 236,
+    "bytes": 5535,
+    "file": "o.json"
+  },
+  "p": {
+    "keys": 4629,
+    "words": 6568,
+    "bytes": 149743,
+    "file": "p.json"
+  },
+  "q": {
+    "keys": 9989,
+    "words": 13931,
+    "bytes": 346297,
+    "file": "q.json"
+  },
+  "r": {
+    "keys": 2556,
+    "words": 3235,
+    "bytes": 78153,
+    "file": "r.json"
+  },
+  "s": {
+    "keys": 23713,
+    "words": 32654,
+    "bytes": 820455,
+    "file": "s.json"
+  },
+  "t": {
+    "keys": 10307,
+    "words": 14509,
+    "bytes": 354594,
+    "file": "t.json"
+  },
+  "w": {
+    "keys": 10858,
+    "words": 16091,
+    "bytes": 383337,
+    "file": "w.json"
+  },
+  "x": {
+    "keys": 24159,
+    "words": 34394,
+    "bytes": 843584,
+    "file": "x.json"
+  },
+  "y": {
+    "keys": 16207,
+    "words": 25927,
+    "bytes": 586539,
+    "file": "y.json"
+  },
+  "z": {
+    "keys": 16261,
+    "words": 23074,
+    "bytes": 560361,
+    "file": "z.json"
+  }
+}

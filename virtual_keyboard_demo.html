@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拼音输入法 — 虚拟键盘演示</title>
+    <style>
+        /* ========== 页面基础样式 ========== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", sans-serif;
+            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #e0e7ff 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(139, 92, 246, 0.15), 0 4px 16px rgba(0, 0, 0, 0.06);
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 560px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #7c3aed;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #9ca3af;
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            margin-bottom: 28px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .input-group .hint {
+            font-size: 12px;
+            color: #9ca3af;
+            font-weight: 400;
+            margin-left: 6px;
+        }
+
+        .vkey-input {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.25s ease;
+            background: #fafafa;
+            cursor: pointer;
+            color: #1f2937;
+            caret-color: #7c3aed;
+        }
+
+        .vkey-input:focus {
+            border-color: #7c3aed;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+        }
+
+        .vkey-input::placeholder {
+            color: #c9cdd4;
+        }
+
+        .result-area {
+            margin-top: 24px;
+            padding: 18px;
+            background: #f8f7ff;
+            border-radius: 12px;
+            border: 1px solid #ede9fe;
+        }
+
+        .result-area .result-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #7c3aed;
+            margin-bottom: 8px;
+        }
+
+        .result-area .result-text {
+            font-size: 16px;
+            color: #374151;
+            min-height: 24px;
+            word-break: break-all;
+            line-height: 1.6;
+        }
+
+        .result-area .result-text:empty::after {
+            content: "尚未输入内容";
+            color: #d1d5db;
+        }
+
+        /* ================================================================
+         *  虚拟键盘样式 (与原项目保持一致，仅做微调适配独立运行)
+         * ================================================================ */
+        .virtualkeyboard {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            pointer-events: none;
+        }
+
+        .virtualkeyboard .bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+        }
+
+        .fullKeyboard {
+            position: relative;
+            width: 850px;
+            max-width: 98vw;
+            background: #d2d5dd;
+            border-radius: 14px 14px 0 0;
+            padding: 10px 10px 16px;
+            z-index: 10000;
+            pointer-events: auto;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .fullKeyboard .keyboardOp {
+            position: absolute;
+            top: -34px;
+            right: 0;
+            cursor: move;
+            background: #d2d5dd;
+            border-radius: 8px 8px 0 0;
+            padding: 4px 16px;
+            font-size: 13px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            line-height: 1;
+        }
+
+        .fullKeyboard .keyboardOp .slideDown {
+            cursor: pointer;
+            color: #e53e3e;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .fullKeyboard .keyboardOp .slideDown:hover {
+            color: #c53030;
+        }
+
+        /* 输入回显区域 */
+        .output-text {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 16px;
+            border: 1px solid #b0b5c0;
+            border-radius: 6px;
+            background: #fff;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+            outline: none;
+        }
+
+        /* ========== 数字键盘候选区域（保留兼容） ========== */
+        .numKeyboard .outputZone {
+            position: relative;
+            background: #fff;
+            border: 1px solid #b0b5c0;
+            border-radius: 6px;
+            padding: 6px 40px 6px 10px;
+            margin-bottom: 8px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        /* ========== 折叠状态：候选栏 ========== */
+        .candidate-bar {
+            position: relative;
+            background: #fff;
+            border: 1px solid #b0b5c0;
+            border-radius: 6px;
+            padding: 6px 96px 6px 10px;
+            margin-bottom: 8px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        /* 展开按钮 */
+        .panel-expand-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #534AB7;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            z-index: 3;
+        }
+
+        .panel-expand-btn:hover {
+            background: #3C3489;
+            transform: translateY(-50%) scale(1.08);
+        }
+
+        .panel-expand-btn:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .panel-expand-btn.disabled {
+            background: #D1D5DB;
+            cursor: not-allowed;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        /* ========== 展开状态：候选面板 ========== */
+        .candidate-panel {
+            position: absolute;
+            left: 10px;
+            right: 10px;
+            bottom: 16px;
+            min-height: 260px;
+            background: #EFEDF8;
+            border: 1px solid #c4b5fd;
+            border-radius: 8px;
+            display: flex;
+            overflow: hidden;
+            z-index: 10;
+            box-shadow: 0 4px 20px rgba(83, 74, 183, 0.2);
+            animation: panelExpand 0.25s ease-out;
+        }
+
+        @keyframes panelExpand {
+            from { opacity: 0; transform: scaleY(0.3); transform-origin: top; }
+            to { opacity: 1; transform: scaleY(1); }
+        }
+
+        /* 左栏：拼音拆分 */
+        .panel-left {
+            width: 110px;
+            flex-shrink: 0;
+            background: #F5F3FF;
+            border-right: 1px solid #DDD6FE;
+            padding: 6px 4px;
+            overflow-y: auto;
+        }
+
+        .pinyin-split-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .pinyin-syllable {
+            width: 96px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            background: #534AB7;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .pinyin-syllable:nth-child(n+2) {
+            background: #7F77DD;
+        }
+
+        .pinyin-syllable:hover {
+            background: #3C3489;
+        }
+
+        .pinyin-separator {
+            width: 96px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #B0B0B0;
+            border-radius: 4px;
+        }
+
+        .pinyin-separator.clickable {
+            color: #534AB7;
+            border: 1px dashed #C4B5FD;
+            background: #EEEDFE;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .pinyin-separator.clickable:hover {
+            background: #DDD6FE;
+        }
+
+        .pinyin-separator.clickable:active {
+            transform: scale(1.1);
+        }
+
+        /* 中栏：候选列表 */
+        .panel-center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 6px 8px;
+            overflow: hidden;
+        }
+
+        .panel-section-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #9CA3AF;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .panel-phrase-section {
+            flex-shrink: 0; /* 联想词按自然高度展示 */
+            overflow: hidden;
+        }
+        .panel-char-section {
+            flex: 1; /* 候选字占满剩余空间 */
+            overflow: hidden;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-phrase-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            overflow: hidden;
+            align-content: flex-start;
+        }
+        .panel-char-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            overflow: hidden;
+            flex: 1;
+            align-content: flex-start;
+        }
+
+        .panel-phrase-list .word,
+        .panel-char-list .word {
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 17px;
+            cursor: pointer;
+            transition: all 0.15s;
+            min-width: 32px;
+            text-align: center;
+            line-height: 1.4;
+            flex-shrink: 0;
+        }
+
+        .panel-phrase-list .word {
+            background: #E6F1FB;
+            color: #0C447C;
+            border: 1px solid #B5D4F4;
+            font-weight: 600;
+        }
+
+        .panel-phrase-list .word:hover {
+            background: #B5D4F4;
+        }
+
+        .panel-char-list .word {
+            background: #EEEDFE;
+            color: #3C3489;
+            border: 1px solid #AFA9EC;
+        }
+
+        .panel-char-list .word:first-child {
+            background: #CECBF6;
+            color: #3C3489;
+            font-weight: 700;
+        }
+
+        .panel-char-list .word:hover {
+            background: #CECBF6;
+        }
+
+        .panel-divider {
+            height: 1px;
+            background: #D1D5DB;
+            margin: 6px 0;
+        }
+
+        .panel-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding-top: 4px;
+            margin-top: auto;
+        }
+
+        .panel-page-info {
+            font-size: 12px;
+            color: #6B7280;
+            min-width: 36px;
+            text-align: center;
+        }
+
+        .panel-page-up,
+        .panel-page-down {
+            cursor: pointer;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #534AB7;
+            background: #F3F0FF;
+            transition: background 0.15s;
+            line-height: 1;
+        }
+
+        .panel-page-up:hover,
+        .panel-page-down:hover {
+            background: #E8E4FF;
+        }
+
+        .panel-page-up.unclick,
+        .panel-page-down.unclick {
+            color: #C9CDD4;
+            background: #F3F4F6;
+            cursor: not-allowed;
+        }
+
+        /* 右栏：功能按钮 */
+        .panel-right {
+            width: 100px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 6px 4px;
+            border-left: 1px solid #DDD6FE;
+            background: #F5F3FF;
+        }
+
+        .panel-btn {
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+        }
+
+        .panel-btn-return {
+            background: #534AB7;
+            color: #fff;
+        }
+
+        .panel-btn-return:hover {
+            background: #3C3489;
+        }
+
+        .panel-btn-backspace,
+        .panel-btn-reinput {
+            background: #F1EFE8;
+            color: #4A5568;
+        }
+
+        .panel-btn-backspace:hover,
+        .panel-btn-reinput:hover {
+            background: #E2DFD5;
+        }
+
+        .output-letter {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            gap: 2px;
+            align-items: center;
+        }
+
+        .output-letter .key {
+            color: #1a1a1a;
+            font-size: 17px;
+            padding: 2px 4px;
+            font-weight: 500;
+        }
+
+        .output-ZH {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            gap: 3px;
+            align-items: center;
+            flex-wrap: nowrap;
+            overflow: hidden;
+            flex: 1;
+        }
+
+        .output-ZH .word {
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 19px;
+            color: #333;
+            transition: all 0.15s;
+            min-width: 28px;
+            text-align: center;
+            line-height: 1.4;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .output-ZH .word:hover {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+
+        .output-ZH .word.vkHide {
+            display: none;
+        }
+
+        /* 词组候选样式 —— 蓝色背景区分单字 */
+        .output-ZH .word-phrase {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+            font-weight: 600;
+        }
+
+        .output-ZH .word-phrase:hover {
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
+
+        /* 上下文联想样式 —— 绿色背景区分 */
+        .output-ZH .word-context {
+            background: #f0fdf4;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+
+        .output-ZH .word-context:hover {
+            background: #dcfce7;
+            color: #14532d;
+        }
+
+        /* 拼音音节分隔显示样式 */
+        .fullKeyboard .key .pinyin-active {
+            color: #7c3aed;
+            font-weight: 700;
+        }
+
+        .fullKeyboard .key .pinyin-pending {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .fullKeyboard .key .pinyin-partial {
+            color: #9ca3af;
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        .fullKeyboard .key .pinyin-sep {
+            color: #d1d5db;
+            margin: 0 2px;
+            font-weight: 400;
+            user-select: none;
+            -webkit-user-select: none;
+            display: inline-block;
+            transition: color 0.2s;
+        }
+
+        /* 可点击分隔符：有替代拆分方案 */
+        .fullKeyboard .key .pinyin-sep-clickable {
+            color: #d85a30;
+            background: rgba(216, 90, 48, 0.08);
+            min-width: 44px;
+            min-height: 32px;
+            line-height: 32px;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0 3px;
+            border: 1px dashed rgba(216, 90, 48, 0.3);
+            font-weight: 600;
+        }
+
+        .fullKeyboard .key .pinyin-sep-clickable:active {
+            background: rgba(216, 90, 48, 0.2);
+            transform: scale(1.1);
+            transition: transform 0.1s;
+        }
+
+        /* 全局拆分切换按钮 */
+        .fullKeyboard .key .pinyin-toggle {
+            display: inline-block;
+            min-width: 52px;
+            min-height: 32px;
+            line-height: 32px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            margin-left: 6px;
+            padding: 0 8px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #185fa5;
+            background: rgba(55, 138, 221, 0.08);
+            border: 1px solid rgba(55, 138, 221, 0.3);
+            vertical-align: middle;
+            transition: background 0.2s;
+        }
+
+        .fullKeyboard .key .pinyin-toggle:active {
+            background: rgba(55, 138, 221, 0.2);
+            transform: scale(1.05);
+            transition: transform 0.1s;
+        }
+
+        .outputZoneOp {
+            position: absolute;
+            right: 48px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 3px;
+            z-index: 2;
+        }
+
+        .outputZoneOp span {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #7c3aed;
+            background: #f3f0ff;
+            transition: background 0.15s;
+            line-height: 1;
+        }
+
+        .outputZoneOp span:hover {
+            background: #e8e4ff;
+        }
+
+        .outputZoneOp span.unclick {
+            color: #c9cdd4;
+            background: #f3f4f6;
+            cursor: not-allowed;
+        }
+
+        /* 键盘按键区域 */
+        .inputZone {
+            user-select: none;
+        }
+
+        .letterWrap {
+            display: flex;
+            flex-wrap: wrap;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .letterWrap li {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 66px;
+            height: 48px;
+            background: #ffffff;
+            border: 1px solid #c4c8d4;
+            border-radius: 7px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            line-height: 1;
+        }
+
+        .letterWrap li:hover {
+            background: #f5f3ff;
+            border-color: #a78bfa;
+            color: #6d28d9;
+        }
+
+        .letterWrap li:active {
+            background: #ddd6fe;
+            transform: scale(0.95);
+        }
+
+        /* 功能键样式 */
+        .letterWrap li.Fn {
+            background: #e8ecf2;
+            border-color: #c4c8d4;
+            color: #4a5568;
+            font-size: 13px;
+            width: 70px;
+        }
+        .letterWrap li.Fn:hover {
+            background: #dde2ea;
+            border-color: #a0a8b5;
+            color: #1a202c;
+        }
+
+        .letterWrap li.backspace { width: 70px; }
+
+        .letterWrap li.handwrite {
+            width: 70px;
+            background: #fef3c7;
+            border-color: #fcd34d;
+            color: #92400e;
+        }
+        .letterWrap li.handwrite:hover {
+            background: #fde68a;
+        }
+
+        .letterWrap li.enter {
+            width: 78px;
+            background: #7c3aed;
+            border-color: #6d28d9;
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .letterWrap li.enter:hover {
+            background: #6d28d9;
+            border-color: #5b21b6;
+            color: #fff;
+        }
+
+        .letterWrap li.inputCut {
+            width: 68px;
+            background: #e0e7ff;
+            border-color: #a5b4fc;
+            color: #4338ca;
+            font-weight: 700;
+            font-size: 13px;
+        }
+        .letterWrap li.inputCut:hover {
+            background: #c7d2fe;
+        }
+
+        .letterWrap li.space {
+            width: 210px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .letterWrap li.symbol {
+            background: #f5f3ff;
+            border-color: #c4b5fd;
+            color: #6d28d9;
+        }
+
+        .letterWrap li.VK_disabled {
+            opacity: 0.35;
+            pointer-events: none;
+            background: #f3f4f6;
+            border-color: #e5e7eb;
+            color: #bbb;
+        }
+
+        /* 提示文字 */
+        .fullKeyboard .keyboard-tip {
+            display: inline-block;
+            line-height: 1.8;
+            position: relative;
+            float: left;
+            top: 6px;
+            left: 15px;
+            color: #1758d9;
+            font-size: 14px;
+            font-weight: 700;
+            width: 250px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 860px) {
+            .fullKeyboard {
+                width: 100vw;
+                border-radius: 10px 10px 0 0;
+                padding: 8px 4px 10px;
+            }
+            .letterWrap { gap: 4px; }
+            .letterWrap li {
+                width: 8.2vw;
+                height: 42px;
+                font-size: 13px;
+                border-radius: 5px;
+            }
+            .letterWrap li.Fn,
+            .letterWrap li.backspace,
+            .letterWrap li.handwrite { width: 10vw; font-size: 11px; }
+            .letterWrap li.enter { width: 11vw; }
+            .letterWrap li.space { width: 22vw; }
+            .fullKeyboard .keyboard-tip { display: none; }
+            /* 展开面板响应式 */
+            .candidate-panel { left: 4px; right: 4px; bottom: 10px; min-height: 220px; }
+            .panel-left { width: 80px; }
+            .panel-right { width: 80px; }
+            .pinyin-syllable, .pinyin-separator { width: 70px; font-size: 13px; }
+            .panel-btn { font-size: 11px; height: 32px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>拼音输入法</h1>
+        <p>点击输入框自动呼出虚拟键盘 · 支持连续拼音输入 · 智能音节拆分 · 词组联想 + 上下文预测</p>
+    </div>
+
+    <div class="input-group">
+        <label for="input1">姓名 <span class="hint">（点击这里弹出键盘）</span></label>
+        <input type="text" id="input1" class="vkey-input" placeholder="请输入姓名...">
+    </div>
+
+    <div class="input-group">
+        <label for="input2">备注 <span class="hint">（点击这里弹出键盘）</span></label>
+        <input type="text" id="input2" class="vkey-input" placeholder="请输入备注信息...">
+    </div>
+
+    <div class="result-area">
+        <div class="result-label">姓名输入结果：</div>
+        <div class="result-text" id="result1"></div>
+    </div>
+
+    <div class="result-area">
+        <div class="result-label">备注输入结果：</div>
+        <div class="result-text" id="result2"></div>
+    </div>
+
+    <div class="result-area" style="margin-top: 20px; padding: 12px 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <div class="result-label" style="margin-bottom: 8px;">智能联想图例：</div>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; color: #64748b;">
+            <span><span style="display:inline-block;padding:2px 10px;border-radius:4px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-weight:600;">词组</span> &nbsp;拼音拆音匹配的词组候选</span>
+            <span><span style="display:inline-block;padding:2px 10px;border-radius:4px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;">联想</span> &nbsp;上下文预测的下一个字</span>
+            <span><span style="display:inline-block;padding:2px 10px;border-radius:4px;color:#333;">单字</span> &nbsp;当前音节的单字候选</span>
+        </div>
+        <div class="result-label" style="margin-top: 10px; margin-bottom: 8px;">拼音区显示图例（连续输入时）：</div>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; color: #64748b;">
+            <span><span style="display:inline-block;padding:2px 10px;border-radius:4px;color:#7c3aed;font-weight:700;">ti</span> &nbsp;当前音节（紫色加粗）</span>
+            <span><span style="display:inline-block;padding:2px 10px;border-radius:4px;color:#6b7280;">jin</span> &nbsp;待选音节（灰色）</span>
+            <span><span style="display:inline-block;padding:2px 10px;border-radius:4px;color:#9ca3af;font-style:italic;">s</span> &nbsp;未完成输入（浅灰斜体）</span>
+            <span><span style="display:inline-block;padding:2px 4px;border-radius:4px;color:#d1d5db;">'</span> &nbsp;音节分隔符</span>
+        </div>
+        <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;">
+            示例：输入 <code style="background:#f1f5f9;padding:2px 6px;border-radius:3px;">tij</code> → 拆分为 <span style="color:#7c3aed;font-weight:600;">ti</span>'<span style="color:#9ca3af;font-style:italic;">j</span>，展示 ti 的候选字，j 保留待续<br>
+            示例：输入 <code style="background:#f1f5f9;padding:2px 6px;border-radius:3px;">tianjinshi</code> → 拆分为 <span style="color:#7c3aed;font-weight:600;">tian</span>'<span style="color:#6b7280;">jin</span>'<span style="color:#6b7280;">shi</span>，逐音节选择候选字<br>
+            <strong>新功能</strong>：点击候选栏右侧 <span style="display:inline-block;padding:1px 6px;border-radius:3px;background:#534AB7;color:#fff;font-size:11px;">▼</span> 展开三栏面板（左拼音拆分 + 中候选列表 + 右功能按钮），Esc 或点击 <span style="display:inline-block;padding:1px 6px;border-radius:3px;background:#534AB7;color:#fff;font-size:11px;">▲</span> 收起
+        </div>
+    </div>
+</div>
+
+<!-- ① 先加载 jQuery（virtualkeyboard.js 强依赖） -->
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+
+<!--
+  ================================================================
+  为 virtualkeyboard.js 提供桩函数 (Stubs)
+  必须在加载 virtualkeyboard.js 之前定义
+  ================================================================
+-->
+<script>
+/* -- 开发者模式：允许物理键盘直接键入到虚拟键盘 -- */
+var isDev = true;
+
+/* -- 项目字典（桩） -- */
+var dict_project = { RHZD_tablet: { code: 'RHZD_tablet' } };
+
+/* -- 手写输入接口（桩） -- */
+var InterFaceSet = { IF_handwrittenInput: 'handwrittenInput' };
+function IFRamp_callback() {
+    alert('手写输入功能需原生 App 支持，当前 Web 环境暂不可用。');
+}
+
+/* -- 页面框架接口（桩） -- */
+function topPage() {
+    return {
+        project: '',
+        showMaskLayer: function() {},
+        hideMaskLayer: function() {}
+    };
+}
+
+/* -- 输入值同步：将键盘缓冲区内容写入目标 input -- */
+function setInputValueAndSync($el, value) {
+    $el.val(value);
+    $el[0].dispatchEvent(new Event('input', { bubbles: true }));
+}
+</script>
+
+<!-- 加载原始虚拟键盘脚本 -->
+<script src="virtualkeyboard.js"></script>
+
+<!-- 加载智能联想增强模块（必须在 virtualkeyboard.js 之后） -->
+<script src="pinyin_association.js"></script>
+
+<!-- 页面初始化 -->
+<script>
+$(function() {
+    var inputCount = 0;
+
+    $('.vkey-input').each(function() {
+        inputCount++;
+
+        // 为每个输入框绑定全键盘
+        keyboard.keyboard_full(this, {}, null, function(finalValue) {
+            var $el = $(keyboard.setting.el);
+            var id = $el.attr('id');
+
+            if (id === 'input1') {
+                $('#result1').text(finalValue || '(空)');
+            } else if (id === 'input2') {
+                $('#result2').text(finalValue || '(空)');
+            }
+
+            console.log('[键盘已收起] 输入框: ' + id + ', 内容: ' + (finalValue || '(空)'));
+        });
+    });
+
+    console.log('虚拟键盘初始化完成，已绑定 ' + inputCount + ' 个输入框。');
+    console.log('操作说明：');
+    console.log('  1. 点击页面上的输入框 → 弹出键盘');
+    console.log('  2. 默认中文模式（点击"中文/英文"按钮可切换）');
+    console.log('  3. 输入拼音 → 候选区出字 → 点击候选字上屏');
+    console.log('  4. 点击"确定"按钮 → 提交内容到输入框并收起键盘');
+    console.log('  5. 点击"关闭"按钮 → 不提交直接收起键盘');
+    console.log('  6. 点击背景遮罩 → 也可关闭键盘');
+    console.log('  —— 智能联想功能 ——');
+    console.log('  7. 输入连续拼音（如 nihao）→ 自动拆音并联想词组（你好）');
+    console.log('  8. 候选区蓝色项 = 词组联想，绿色项 = 上下文预测');
+    console.log('  9. 选中词/字后，候选区自动展示下一个常用字（上下文联想）');
+    console.log('  10. 物理键盘：空格选首选词，数字键 1-9 选对应候选');
+    console.log('  —— 连续拼音输入（新增） ——');
+    console.log('  11. 输入 tij → 自动拆分为 ti + j，展示 ti 的候选字，j 保留待续输入');
+    console.log('  12. 输入 tianjinshi → 拆分为 tian\'jin\'shi，逐音节选择候选字');
+    console.log('  13. 选中候选后自动消费对应音节，剩余拼音继续匹配');
+    console.log('  14. 拼音区显示：紫色=当前音节，灰色=待选音节，斜体=未完成输入');
+});
+</script>
+
+</body>
+</html>
