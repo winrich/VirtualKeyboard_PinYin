@@ -1,0 +1,2 @@
+# VirtualKeyboard_PinYin
+自助触摸屏使用的虚拟拼音输入键盘
